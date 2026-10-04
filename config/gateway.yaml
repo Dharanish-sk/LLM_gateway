@@ -1,0 +1,82 @@
+mode: production
+state: redis
+keys_file: config/keys.json
+bucket_capacity: 20
+bucket_refill_rate: 2
+max_concurrent_requests: 100
+cache:
+  enabled: true
+  semantic_enabled: false # Enable only after experiments/cache threshold calibration.
+  threshold: 0.98
+  embedding_url: http://ollama:11434
+  embedding_model: all-minilm
+  ttl_seconds: 3600
+  max_entries_per_namespace: 256
+  policy_revision: v1
+router:
+  version: v0
+  small_tier: local
+  medium_tier: small
+  large_tier: large
+  probability_threshold: 0.8
+reliability:
+  fallback_enabled: true
+  max_retries: 2
+  fallback_order: [large, small, local]
+  failure_threshold: 3
+  cooldown_seconds: 30
+  request_timeout: 240
+tiers:
+  - name: local
+    provider: ollama
+    model: qwen2.5:1.5b-instruct-q4_K_M # Provisional; choose after profiling.
+    base_url: http://ollama:11434
+    ttft_timeout: 45 # Provisional; replace with measured p95-derived values.
+    idle_timeout: 30
+    total_timeout: 180
+    capabilities:
+      tools: false
+      max_output_tokens: 2048
+      context_window_tokens: 4096
+    price:
+      source: local; infrastructure cost excluded
+  - name: small
+    provider: openai
+    model: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    ttft_timeout: 15
+    idle_timeout: 20
+    total_timeout: 120
+    capabilities:
+      tools: true
+      strict_tools: true
+      json_object: true
+      json_schema: true
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      input_per_million: 0.15
+      output_per_million: 0.60
+      source: https://developers.openai.com/api/docs/pricing # Standard, uncached text pricing.
+      verified_on: "2026-10-03"
+  - name: large
+    provider: openai
+    model: gpt-4o
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    ttft_timeout: 20
+    idle_timeout: 25
+    total_timeout: 180
+    capabilities:
+      tools: true
+      strict_tools: true
+      json_object: true
+      json_schema: true
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      input_per_million: 2.50
+      output_per_million: 10.00
+      source: https://developers.openai.com/api/docs/pricing
+      verified_on: "2026-10-03"

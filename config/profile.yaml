@@ -1,0 +1,19 @@
+configurations:
+  - id: llama32-3b-q4
+    quantization: Q4_K_M
+    tier: {name: local, provider: ollama, model: "llama3.2:3b-instruct-q4_K_M", base_url: "http://localhost:11434"}
+  - id: llama32-3b-q5
+    quantization: Q5_K_M
+    tier: {name: local, provider: ollama, model: "llama3.2:3b-instruct-q5_K_M", base_url: "http://localhost:11434"}
+  - id: qwen25-15b-q4
+    quantization: Q4_K_M
+    tier: {name: local, provider: ollama, model: "qwen2.5:1.5b-instruct-q4_K_M", base_url: "http://localhost:11434"}
+  - id: qwen25-15b-q5
+    quantization: Q5_K_M
+    tier: {name: local, provider: ollama, model: "qwen2.5:1.5b-instruct-q5_K_M", base_url: "http://localhost:11434"}
+  - id: gemma2-2b-q4
+    quantization: Q4_K_M
+    tier: {name: local, provider: ollama, model: "gemma2:2b-instruct-q4_K_M", base_url: "http://localhost:11434"}
+  - id: gemma2-2b-q5
+    quantization: Q5_K_M
+    tier: {name: local, provider: ollama, model: "gemma2:2b-instruct-q5_K_M", base_url: "http://localhost:11434"}

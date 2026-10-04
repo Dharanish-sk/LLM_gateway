@@ -1,0 +1,18 @@
+mode: demo
+state: memory
+bucket_capacity: 20
+bucket_refill_rate: 2
+cache:
+  enabled: true
+  semantic_enabled: false
+  embedding_model: demo-hash-64
+router:
+  small_tier: local
+  medium_tier: small
+  large_tier: large
+reliability:
+  fallback_order: [large, small, local]
+tiers:
+  - {name: local, provider: mock, model: demo-local, mock_delay: 0.001}
+  - {name: small, provider: mock, model: demo-small, mock_delay: 0.002}
+  - {name: large, provider: mock, model: demo-large, mock_delay: 0.003}

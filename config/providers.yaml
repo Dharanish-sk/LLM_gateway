@@ -1,0 +1,129 @@
+# Native multi-provider catalog. Only selected tiers need credentials.
+# Use provider aliases in requests, e.g. model: claude, gemini, qwen or deepseek.
+# Model IDs are examples; select versions available to your account.
+mode: production
+state: redis
+keys_file: config/keys.json
+bucket_capacity: 20
+bucket_refill_rate: 2
+cache:
+  enabled: true
+  semantic_enabled: false
+  embedding_url: http://localhost:11434
+  embedding_url_env: OLLAMA_BASE_URL
+  embedding_model: all-minilm
+router:
+  version: v0
+  small_tier: local
+  medium_tier: gemini
+  large_tier: claude
+reliability:
+  fallback_enabled: true
+  max_retries: 2
+  fallback_order: [claude, gemini, deepseek, qwen, local]
+tiers:
+  - name: local
+    provider: ollama
+    model: qwen2.5:1.5b-instruct-q4_K_M
+    base_url: http://localhost:11434
+    base_url_env: OLLAMA_BASE_URL
+    ttft_timeout: 45
+    idle_timeout: 30
+    capabilities:
+      tools: false
+      json_object: true
+      json_schema: true
+      max_output_tokens: 2048
+      context_window_tokens: 4096 # Conservative deployment budget; align with Ollama num_ctx.
+    price:
+      source: local; infrastructure excluded
+  - name: claude
+    provider: anthropic
+    model: claude-sonnet-4-6
+    base_url: https://api.anthropic.com/v1
+    api_key_env: ANTHROPIC_API_KEY
+    ttft_timeout: 30
+    # For model versions that reject sampling parameters, configure:
+    # omit_parameters: [temperature, top_p]
+    # Optional model-specific body fields (not client/protocol overrides):
+    # extra_body: {thinking: {type: adaptive}}
+    capabilities:
+      tools: true
+      strict_tools: true
+      json_object: false
+      json_schema: true
+      seed: false
+      temperature_with_top_p: false
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      source: "UNCONFIGURED: verify this model's input/output rates before cost comparisons"
+  - name: gemini
+    provider: gemini
+    model: gemini-2.5-flash
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key_env: GEMINI_API_KEY
+    ttft_timeout: 30
+    capabilities:
+      tools: true
+      strict_tools: false
+      json_object: true
+      json_schema: true
+      tools_with_response_format: false # Enable only for a verified model/version combination.
+      disable_parallel_tool_calls: false
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      source: "UNCONFIGURED: verify this model's input/output rates before cost comparisons"
+  - name: qwen
+    provider: openai_compatible
+    model: qwen-plus
+    # Choose the DashScope endpoint for your account's region.
+    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    ttft_timeout: 30
+    capabilities:
+      tools: true
+      strict_tools: false
+      json_object: true
+      json_schema: false
+      tools_with_response_format: false
+      seed: true
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      source: "UNCONFIGURED: verify this model's input/output rates before cost comparisons"
+  - name: deepseek
+    provider: openai_compatible
+    model: deepseek-chat
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    ttft_timeout: 30
+    capabilities:
+      tools: true
+      strict_tools: false
+      json_object: true
+      json_schema: false
+      tools_with_response_format: false
+      seed: false
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      source: "UNCONFIGURED: verify this model's input/output rates before cost comparisons"
+  - name: gpt
+    provider: openai
+    model: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    capabilities:
+      tools: true
+      strict_tools: true
+      json_object: true
+      json_schema: true
+      max_output_tokens: 8192
+      context_window_tokens: 65536
+    price:
+      input_per_million: 0.15
+      output_per_million: 0.60
+      source: https://developers.openai.com/api/docs/pricing
+      verified_on: "2026-10-03"

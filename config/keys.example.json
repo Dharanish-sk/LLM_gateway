@@ -1,0 +1,7 @@
+[
+  {
+    "id": "replace-with-client-id",
+    "sha256": "REPLACE_WITH_SHA256_DIGEST_FROM_gateway_keygen",
+    "enabled": true
+  }
+]

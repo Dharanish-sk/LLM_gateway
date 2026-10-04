@@ -1,0 +1,19 @@
+{
+  "uid": "intelligent-llm-gateway",
+  "title": "Intelligent LLM Gateway",
+  "schemaVersion": 40,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-15m", "to": "now"},
+  "tags": ["llm", "gateway"],
+  "panels": [
+    {"id": 1, "title": "Requests / second by tier and outcome", "type": "timeseries", "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (tier, outcome) (rate(gateway_requests_total[1m]))", "legendFormat": "{{tier}} / {{outcome}}"}]},
+    {"id": 2, "title": "End-to-end p50 / p95 latency (seconds)", "type": "timeseries", "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.50, sum by (le, tier) (rate(gateway_request_latency_seconds_bucket[5m])))", "legendFormat": "p50 {{tier}}"}, {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le, tier) (rate(gateway_request_latency_seconds_bucket[5m])))", "legendFormat": "p95 {{tier}}"}], "fieldConfig": {"defaults": {"unit": "s"}}},
+    {"id": 3, "title": "Backend p95 TTFT", "type": "timeseries", "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, tier) (rate(gateway_backend_ttft_seconds_bucket[5m])))", "legendFormat": "{{tier}}"}], "fieldConfig": {"defaults": {"unit": "s"}}},
+    {"id": 4, "title": "Cache outcomes / second", "type": "timeseries", "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (result) (rate(gateway_cache_total[1m]))", "legendFormat": "{{result}}"}]},
+    {"id": 5, "title": "Backend tokens / second", "type": "timeseries", "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (tier, direction, source) (rate(gateway_tokens_total[1m]))", "legendFormat": "{{tier}} {{direction}} {{source}}"}]},
+    {"id": 6, "title": "Configured token spend (USD / hour)", "type": "timeseries", "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (tier) (rate(gateway_cost_usd_total[5m])) * 3600", "legendFormat": "{{tier}}"}], "fieldConfig": {"defaults": {"unit": "currencyUSD"}}},
+    {"id": 7, "title": "Rate limits, fallbacks and circuit skips / second", "type": "timeseries", "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(gateway_rate_limit_rejections_total[1m]))", "legendFormat": "rate limited"}, {"refId": "B", "expr": "sum(rate(gateway_fallbacks_total[1m]))", "legendFormat": "fallbacks"}, {"refId": "C", "expr": "sum(rate(gateway_circuit_skips_total[1m]))", "legendFormat": "circuit skips"}]},
+    {"id": 8, "title": "Five-minute latency sample size (interpret percentiles with N)", "type": "stat", "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "gateway-prometheus"}, "targets": [{"refId": "A", "expr": "sum(increase(gateway_request_latency_seconds_count[5m]))"}]}
+  ]
+}

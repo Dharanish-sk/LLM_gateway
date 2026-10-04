@@ -1,0 +1,82 @@
+name: intelligent-llm-gateway
+services:
+  gateway:
+    build: .
+    command: [gateway, serve, --config, "${GATEWAY_CONFIG:-config/demo.yaml}", --host, 0.0.0.0]
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      SMALL_API_KEY: ${SMALL_API_KEY:-}
+      LARGE_API_KEY: ${LARGE_API_KEY:-}
+      GATEWAY_DEMO_KEY: ${GATEWAY_DEMO_KEY:-demo-key-change-me}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+    volumes:
+      - ./config:/app/config:ro
+      - ./artifacts:/app/artifacts:ro
+    depends_on:
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, "yes", --maxmemory, 256mb, --maxmemory-policy, noeviction]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    restart: unless-stopped
+  ollama:
+    image: ollama/ollama:0.6.8
+    profiles: [models]
+    ports: ["127.0.0.1:11434:11434"]
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: 1
+    volumes: ["ollama-data:/root/.ollama"]
+    healthcheck:
+      test: [CMD, ollama, list]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  model-init:
+    image: ollama/ollama:0.6.8
+    profiles: [models]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: [/bin/sh, -c]
+    command: ["ollama pull qwen2.5:1.5b-instruct-q4_K_M && ollama pull all-minilm"]
+    depends_on:
+      ollama: {condition: service_healthy}
+    restart: "no"
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on: [gateway]
+  grafana:
+    image: grafana/grafana:11.6.0
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-gateway-local-demo}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboard.json:/var/lib/grafana/dashboards/gateway.json:ro
+    depends_on: [prometheus]
+volumes:
+  redis-data:
+  ollama-data:
+  prometheus-data:
+  grafana-data:
